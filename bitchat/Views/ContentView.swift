@@ -9,6 +9,12 @@
 import SwiftUI
 
 struct ContentView: View {
+    var body: some View {
+        BaseNavigationView()
+    }
+}
+
+struct ContentView2: View {
     @EnvironmentObject var viewModel: ChatViewModel
     @State private var messageText = ""
     @State private var textFieldSelection: NSRange? = nil
@@ -27,6 +33,9 @@ struct ContentView: View {
     @State private var showCommandSuggestions = false
     @State private var commandSuggestions: [String] = []
     @State private var showLeaveChannelAlert = false
+    
+    @State private var showMainFrame = false
+        
     
     private var backgroundColor: Color {
         colorScheme == .dark ? Color.black : Color.white
