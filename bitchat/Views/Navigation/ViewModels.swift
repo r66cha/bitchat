@@ -1,7 +1,14 @@
 #if os(iOS)
 import SwiftUI
+import MapKit
 
+struct PersonLocation: Identifiable {
+    let id = UUID()
+    let username: String
+    let coordinate: CLLocationCoordinate2D
+}
 
+// MARK: - UserBoxView
 struct UserBoxView: View {
     let username: String
     
@@ -25,6 +32,7 @@ struct UserBoxView: View {
     }
 }
 
+// MARK: - ChatBoxView
 struct ChatBoxView: View {
     let username: String
     let lastMessage: String
@@ -84,7 +92,7 @@ struct ChatBoxView: View {
     }
 }
 
-
+// MARK: - ChatModel
 struct ChatModel: Identifiable, Hashable {
     let id = UUID()
     let username: String
@@ -95,12 +103,16 @@ struct ChatModel: Identifiable, Hashable {
     let isDelivered: Bool
 }
 
-
 // MARK: - PeopleScreenViewModel
-// Logic and data for PeopleScreen
 class PeopleScreenViewModel: ObservableObject {
     @Published var peopleList: [String] = []
     let peopleLabel: String = "People"
+    
+    @Published var peopleLocations: [PersonLocation] = [
+        .init(username: "User 1", coordinate: CLLocationCoordinate2D(latitude: 55.751244, longitude: 37.618423)),
+        .init(username: "User 2", coordinate: CLLocationCoordinate2D(latitude: 55.760000, longitude: 37.620000)),
+        .init(username: "User 3", coordinate: CLLocationCoordinate2D(latitude: 55.748000, longitude: 37.615000)),
+    ]
     
     init() {
         loadPeople()
@@ -113,6 +125,7 @@ class PeopleScreenViewModel: ObservableObject {
     }
 }
 
+// MARK: - ChatsScreenViewModel
 class ChatsScreenViewModel: ObservableObject {
     @Published var chatList: [ChatModel] = []
     let multiChat: String = "Multichat"

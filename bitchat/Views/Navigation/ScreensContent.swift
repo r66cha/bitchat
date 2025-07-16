@@ -1,17 +1,20 @@
 #if os(iOS)
-import SwiftUI
 
+import SwiftUI
+import MapKit
+
+// MARK: - IconsSettings
 struct IconsSettings {
     static var labelIconSize: CGFloat = 36
     static var labelIconTextSize: CGFloat = 28
     static var labelIconOpacity: CGFloat = 0.2
-    
 }
 
+
 // MARK: - TabBar
-// TabBar and main navigation buttons
 struct BaseScreensNavigation: View {
     @State private var selectedTab = 1
+    @StateObject private var viewModel = PeopleScreenViewModel()
     
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -20,7 +23,7 @@ struct BaseScreensNavigation: View {
                 PeopleScreenContent()
             }
             .tabItem {
-                Label("People", systemImage: "person.2.fill")
+                Label("\(viewModel.peopleList.count)", systemImage: "person.2.fill") //"wave.3.left.circle.fill"
             }
             .tag(0)
             
@@ -28,11 +31,9 @@ struct BaseScreensNavigation: View {
                 ChatsScreenContent()
             }
             .tabItem {
-                Label(
-                    "Chats",
-                    systemImage: "bubble.left.and.bubble.right.fill"
-                )
+                Label("Chats", systemImage: "bubble.left.and.bubble.right.fill")
             }
+            .badge(33)
             .tag(1)
             
             NavigationStack {
@@ -42,170 +43,340 @@ struct BaseScreensNavigation: View {
                 Label("Settings", systemImage: "gearshape.fill")
             }
             .tag(2)
-            
         }
         .tint(.green)
     }
 }
 
-
-struct RequestsScreen: View {
-    var body: some View {
-        VStack {
-            Text("Requests for conversations")
-                .font(.body)
-        }
-        .navigationTitle("Requests")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
-struct MetsScreen: View {
-    var body: some View {
-        VStack {
-            Text("Met people today")
-                .font(.body)
-        }
-        .navigationTitle("Met")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
-struct QRCodeSheetView: View {
-    var body: some View {
-        VStack(spacing: 24) {
-            Text("Здесь будет ваш QR-код")
-                .font(.title3)
-                .fontWeight(.medium)
-        }
-        .padding()
-        .presentationDetents([.medium, .large]) // iOS 16+ детенты
-    }
-}
-
-
-
-// MARK: - PeopleScreenContent
-// People screen with adaptive navigation title and MVVM pattern
-struct PeopleScreenContent: View {
-    @StateObject private var viewModel = PeopleScreenViewModel()
-    @State private var isBookmarked: Bool = false
-    @State private var showMetsScreen = false
+// MARK: - LocalChatScreen
+struct LocalChatScreen: View {
+    @State private var messageText = ""
+    @FocusState private var isTextFieldFocused: Bool
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
-        VStack {
-            if viewModel.peopleList.isEmpty {
-                Text("No people nearby you")
-            } else {
-                List {
-                    
-                    Section {
-                        Text("People around you")
-                            .font(.system(size: 14, weight: .regular))
-                            .foregroundColor(.gray)
-                    }
-                    .listRowSeparator(.hidden)
-                    
-                    ForEach(viewModel.peopleList, id: \.self) { person in
-                        UserBoxView(username: person)
-                    }
-                    .font(.body)
+        ZStack {
+            // Фон, на который вешаем тап
+            Color.clear
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    isTextFieldFocused = false // скрыть клавиатуру
                 }
-                .listStyle(PlainListStyle())
+            
+            VStack {
+                Spacer()
+                Text("LocalChat")
+                    .font(.body)
+                Spacer()
+                
+                VStack(spacing: 0) {
+                    Divider().opacity(0.5)
+                    HStack(spacing: 12) {
+                        Button {
+                            // действие "+"
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.system(size: 28, weight: .light))
+                                .foregroundColor(.primary)
+                        }
+                        .frame(width: 28, height: 28)
+                        
+                        TextField("Message...", text: $messageText)
+                            .focused($isTextFieldFocused)
+                            .padding(.horizontal, 8)
+                            .frame(height: 28)
+                            .background(Color(.systemGray4).opacity(0.5))
+                            .clipShape(Capsule())
+                            .overlay(
+                                Capsule()
+                                    .stroke(Color.gray.opacity(0.6), lineWidth: 0.5)
+                            )
+                        
+                        Button {
+                            messageText = ""
+                        } label: {
+                            Image(systemName: "paperplane.circle.fill")
+                                .font(.system(size: 28))
+                                .foregroundColor(.green)
+                        }
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                }
+                .background(.ultraThinMaterial)
+                .ignoresSafeArea(edges: .bottom)
             }
+        }
+        .navigationTitle("LocalChat")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar{
+            
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Menu {
+                    
+                    Text("Label")
+                    
+                    Button {
+                    } label: {
+                        Label(
+                            "Info about Local chat",
+                            systemImage: "info.circle")
+                    }
+                    
+                    Button {
+                        
+                    } label: {
+                        Label(
+                            "Button",
+                            systemImage: "slider.horizontal.3"
+                        )
+                    }
+                    
+                } label: {
+                    ZStack {
+                        Image(systemName: "ellipsis")
+                            .font(.system(size: 20, weight: .regular))
+                            .foregroundColor(colorScheme == .dark ? .white : .black)
+                    }
+                    .frame(width: 44, height: 44)
+                }
+            }
+            
+        }
+        .toolbar(.hidden, for: .tabBar)
+    }
+}
+
+// MARK: - MapScreen
+struct MapScreen: View {
+    @StateObject private var viewModel = PeopleScreenViewModel()
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var region = MKCoordinateRegion(
+        center: CLLocationCoordinate2D(latitude: 55.751244, longitude: 37.618423),
+        span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+    )
+    
+    var body: some View {
+        ZStack {
+            
+            Map(coordinateRegion: $region, annotationItems: viewModel.peopleLocations) { person in
+                MapMarker(coordinate: person.coordinate, tint: .green)
+            }
+            .edgesIgnoringSafeArea(.all)
+            
+        }
+        .navigationTitle("Map")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar{
+            
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Menu {
+                    
+                    Text("Label")
+                    
+                    Button {
+                    } label: {
+                        Label(
+                            "Info about Map",
+                            systemImage: "info.circle")
+                    }
+                    
+                    Button {
+                        
+                    } label: {
+                        Label(
+                            "Button",
+                            systemImage: "slider.horizontal.3"
+                        )
+                    }
+                    
+                } label: {
+                    ZStack {
+                        Image(systemName: "ellipsis")
+                            .font(.system(size: 20, weight: .regular))
+                            .foregroundColor(colorScheme == .dark ? .white : .black)
+                    }
+                    .frame(width: 44, height: 44)
+                }
+            }
+            
+        }
+        .toolbar(.hidden, for: .tabBar)
+    }
+}
+
+// MARK: - MetsSheetView
+struct MetsSheetView: View {
+    
+    var body: some View {
+        ZStack {
+            VStack(spacing: 24) {
+                Text("People you met today will be here")
+                    .font(.title3)
+                    .fontWeight(.medium)
+            }
+        }
+        .padding()
+        .presentationDetents([.medium, .large])
+    }
+}
+
+// MARK: - NearSheetView
+struct NearSheetView: View {
+    var body: some View {
+        ZStack {
+            VStack(spacing: 24) {
+                Text("People around will be here")
+                    .font(.title3)
+                    .fontWeight(.medium)
+            }
+        }
+        .padding()
+        .presentationDetents([.medium, .large])
+    }
+}
+
+// MARK: - PeopleScreenContent
+struct PeopleScreenContent: View {
+    @StateObject private var viewModel = PeopleScreenViewModel()
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var showMetsSheetView = false
+    @State private var showNearSheetView = false
+    @State private var showMapScreen = false
+    
+    var body: some View {
+        ZStack {
+            VStack {
+                if viewModel.peopleList.isEmpty {
+                    Text("No people nearby you")
+                } else {
+                    List {
+                        Section {
+                            Text("People nearby you")
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundColor(.gray)
+                        }
+                        .listRowSeparator(.hidden)
+                        
+                        ForEach(viewModel.peopleList, id: \.self) { person in
+                            UserBoxView(username: person)
+                        }
+                        .font(.body)
+                    }
+                    .listStyle(PlainListStyle())
+                }
+            }
+            
+            
+            
         }
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle(
-            UIDevice.current.userInterfaceIdiom == .phone
-            ? viewModel.peopleLabel : ""
+            UIDevice.current.userInterfaceIdiom == .phone ? viewModel.peopleLabel : ""
         )
         .toolbar {
             
             ToolbarItem(placement: .navigationBarLeading) {
+                
                 Button {
-                    showMetsScreen = true
+                    showMapScreen = true
                 } label: {
-                    ZStack {
-                        Image(systemName: "clock.arrow.circlepath")
-                            .font(.system(size: 20, weight: .regular))
-                            .foregroundColor(.green)
-                    }
-                    .font(.system(.title, design: .default).weight(.bold))
-                    //                    .background(Color.gray.opacity(0.2))
+                    Image(systemName: "map.fill")
+                        .font(.system(size: 18, weight: .regular))
+                        .foregroundColor(colorScheme == .dark ? .white : .black)
+                        .frame(width: 44, height: 44)
                 }
             }
             
             ToolbarItem(placement: .principal) {
                 if UIDevice.current.userInterfaceIdiom == .phone {
                     Text(viewModel.peopleLabel)
-                        .font(
-                            .system(size: 20, design: .default).weight(
-                                .bold
-                            )
-                        )
+                        .font(.system(size: 20, weight: .bold))
                 }
             }
             
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    isBookmarked.toggle()
+                Menu {
+                    
+                    Text("Label")
+                    
+                    Button {
+                    } label: {
+                        Label(
+                            "Info about People",
+                            systemImage: "info.circle")
+                    }
+                    
+                    Button {
+                        
+                    } label: {
+                        Label(
+                            "Button",
+                            systemImage: "slider.horizontal.3"
+                        )
+                    }
+                    
+                    
                 } label: {
                     ZStack {
-                        Image(systemName: "bookmark.fill")
-                            .font(.system(size: 18, weight: .regular))
-                            .foregroundColor(
-                                isBookmarked ? .green : .gray.opacity(0.5)
-                            )
+                        Image(systemName: "ellipsis")
+                            .font(.system(size: 20, weight: .regular))
+                            .foregroundColor(colorScheme == .dark ? .white : .black)
                     }
                     .frame(width: 44, height: 44)
-                    //                    .background(Color.gray.opacity(0.2))
                 }
             }
+            
+            
         }
-        .navigationDestination(isPresented: $showMetsScreen) {
-            MetsScreen()
+        .navigationDestination(isPresented: $showMapScreen) {
+            MapScreen()
         }
     }
 }
 
-
 // MARK: - ChatsScreenContent
-// Chats screen with adaptive navigation title and MVVM pattern
 struct ChatsScreenContent: View {
     @StateObject private var viewModel = ChatsScreenViewModel()
-    @State private var showRequestsScreen = false
-
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var showLocalChatScreen = false
+    @State private var showNearSheetView = false
+    @State private var showMapScreen = false
+    @State private var hasUnreadRequests: Bool = true
+    
     var body: some View {
-        VStack {
-            if viewModel.chatList.isEmpty {
-                List {
-                    Text(viewModel.multiChat)
-                        .font(.body)
-                }
-            } else {
-                List {
-                    Section {
-                        Text("All your conversations")
-                            .font(.system(size: 14, weight: .regular))
-                            .foregroundColor(.gray)
+        ZStack {
+            VStack {
+                if viewModel.chatList.isEmpty {
+                    List {
+                        Text(viewModel.multiChat)
+                            .font(.body)
                     }
-                    .listRowSeparator(.hidden)
-                    
-                    Text(viewModel.multiChat)
-                        .font(.body)
-                    
-                    ForEach(viewModel.chatList) { chat in
-                        ChatBoxView(
-                            username: chat.username,
-                            lastMessage: chat.lastMessage,
-                            hour: chat.hour,
-                            minute: chat.minute,
-                            isRead: chat.isRead,
-                            isDelivered: chat.isDelivered
-                        )
+                } else {
+                    List {
+                        Section {
+                            Text("All your conversations")
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundColor(.gray)
+                        }
+                        .listRowSeparator(.hidden)
+                        
+                        //                        Text(viewModel.multiChat)
+                        //                            .font(.body)
+                        
+                        ForEach(viewModel.chatList) { chat in
+                            ChatBoxView(
+                                username: chat.username,
+                                lastMessage: chat.lastMessage,
+                                hour: chat.hour,
+                                minute: chat.minute,
+                                isRead: chat.isRead,
+                                isDelivered: chat.isDelivered
+                            )
+                        }
                     }
+                    .listStyle(PlainListStyle())
                 }
-                .listStyle(PlainListStyle())
             }
         }
         .navigationBarTitleDisplayMode(.inline)
@@ -214,66 +385,90 @@ struct ChatsScreenContent: View {
             ? viewModel.chatsLabel : ""
         )
         .toolbar {
-            // Левая кнопка — переход на InfoScreen
+            
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
-                    showRequestsScreen = true
+                    showLocalChatScreen = true
                 } label: {
-                    ZStack {
-                        Image(systemName: "exclamationmark.bubble")
+                    ZStack(alignment: .topTrailing) {
+                        Image(systemName: "bubble.left")
                             .font(.system(size: 20, weight: .regular))
                             .foregroundColor(.green)
+                            .frame(width: 44, height: 44)
+                        
+                        if hasUnreadRequests {
+                            Circle()
+                                .fill(Color.red)
+                                .frame(width: 12, height: 12)
+                                .offset(x: -6, y: 6)
+                        }
                     }
                     .frame(width: 44, height: 44)
+                    //                    .background(Color(.gray)).opacity(0.5)
                 }
             }
-
+            
             ToolbarItem(placement: .principal) {
                 if UIDevice.current.userInterfaceIdiom == .phone {
                     Text(viewModel.chatsLabel)
                         .font(.system(size: 20, weight: .bold))
                 }
             }
-
+            
             ToolbarItem(placement: .navigationBarTrailing) {
+                
                 Menu {
+                    
+                    Text("Label")
+                    
                     Button {
-                        // TODO: Create channel
+                        
                     } label: {
-                        Label("Create Channel", systemImage: "plus.message.fill")
+                        Label(
+                            "Info about Chats",
+                            systemImage: "info.circle"
+                        )
                     }
-
+                    
                     Button {
-                        // TODO: Join channel
+                        
                     } label: {
-                        Label("Join Channel", systemImage: "link")
+                        Label(
+                            "Button",
+                            systemImage: "slider.horizontal.3"
+                        )
                     }
+                    
+                    
                 } label: {
                     ZStack {
-                        Image(systemName: "plus")
+                        Image(systemName: "ellipsis")
                             .font(.system(size: 20, weight: .regular))
-                            .foregroundColor(.green)
+                            .foregroundColor(colorScheme == .dark ? .white : .black)
                     }
                     .frame(width: 44, height: 44)
                 }
+                
             }
         }
-        .navigationDestination(isPresented: $showRequestsScreen) {
-            RequestsScreen()
+        .navigationDestination(isPresented: $showLocalChatScreen) {
+            LocalChatScreen()
         }
     }
 }
 
 // MARK: - SettingsScreenContent
-// Settings screen with adaptive navigation title and MVVM pattern
 struct SettingsScreenContent: View {
     @StateObject private var viewModel = SettingsScreenViewModel()
+    @Environment(\.colorScheme) private var colorScheme
     @State private var showQRCodeSheet = false
+    @State private var isChecked = false
     
-    // Main content of the SettingsScreen
     var body: some View {
-        VStack {
-            Text(viewModel.settingsData)
+        ZStack {
+            VStack {
+                Text(viewModel.settingsData)
+            }
         }
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle(
@@ -284,21 +479,15 @@ struct SettingsScreenContent: View {
             
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
-                    withAnimation {
-                                showQRCodeSheet = true
-                            }
+                    // Действие для камеры
                 } label: {
                     ZStack {
-                        Image(systemName: "qrcode")
-                            .font(.system(size: 20, weight: .medium))
-                            .frame(
-                                width: IconsSettings.labelIconSize,
-                                height: IconsSettings.labelIconSize
-                            )
+                        Image(systemName: "camera.circle.fill")
+                            .foregroundColor(.gray)
+                            .font(.system(size: 36, weight: .regular))
+                            .opacity(0.5)
                     }
                     .frame(width: 44, height: 44)
-                    //                    .background(Color.gray.opacity(0.2))
-                    
                 }
             }
             
@@ -314,27 +503,33 @@ struct SettingsScreenContent: View {
             }
             
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    // tap button logic
+                Menu {
+                    
+                    Text("Label")
+                    
+                    Button {
+                    } label: {
+                        Label(
+                            "Info about App",
+                            systemImage: "info.circle")
+                    }
+                    
+                    
+//                    Toggle(isOn: $isChecked) {
+//                            Label("Label", systemImage: isChecked ? "checkmark.circle.fill" : "circle")
+//                        }
+                    
                 } label: {
                     ZStack {
-                        //                        Circle()
-                        //                            .stroke(Color.gray, lineWidth: 2)
-                        //                            .frame(width: 44, height: 44)
-                        
-                        Image(systemName: "camera.circle.fill")
-                            .foregroundColor(.gray)
-                            .font(.system(size: 36, weight: .regular))
-                            .opacity(0.5)
+                        Image(systemName: "ellipsis")
+                            .font(.system(size: 20, weight: .regular))
+                            .foregroundColor(colorScheme == .dark ? .white : .black)
                     }
                     .frame(width: 44, height: 44)
-                    //                    .background(Color.gray.opacity(0.2))
                 }
             }
         }
-        .sheet(isPresented: $showQRCodeSheet) {
-            QRCodeSheetView()
-        }
     }
 }
+
 #endif
