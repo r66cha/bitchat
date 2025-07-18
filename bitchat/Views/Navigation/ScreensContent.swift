@@ -23,7 +23,7 @@ struct BaseScreensNavigation: View {
                 PeopleScreenContent()
             }
             .tabItem {
-                Label("\(viewModel.peopleList.count)", systemImage: "person.2.fill") //"wave.3.left.circle.fill"
+                Label("People", systemImage: "person.2.fill")
             }
             .tag(0)
             
@@ -43,6 +43,7 @@ struct BaseScreensNavigation: View {
                 Label("Settings", systemImage: "gearshape.fill")
             }
             .tag(2)
+            
         }
         .tint(.green)
     }
@@ -51,8 +52,10 @@ struct BaseScreensNavigation: View {
 // MARK: - LocalChatScreen
 struct LocalChatScreen: View {
     @State private var messageText = ""
+    @State private var showSheetView = false
     @FocusState private var isTextFieldFocused: Bool
     @Environment(\.colorScheme) private var colorScheme
+    
     
     var body: some View {
         ZStack {
@@ -73,7 +76,7 @@ struct LocalChatScreen: View {
                     Divider().opacity(0.5)
                     HStack(spacing: 12) {
                         Button {
-                            // действие "+"
+                            
                         } label: {
                             Image(systemName: "plus")
                                 .font(.system(size: 28, weight: .light))
@@ -124,7 +127,7 @@ struct LocalChatScreen: View {
                     }
                     
                     Button {
-                        
+                        showSheetView = true
                     } label: {
                         Label(
                             "Button",
@@ -144,6 +147,10 @@ struct LocalChatScreen: View {
             
         }
         .toolbar(.hidden, for: .tabBar)
+        .sheet(isPresented: $showSheetView) {
+            SheetView()
+        }
+        
     }
 }
 
@@ -151,6 +158,7 @@ struct LocalChatScreen: View {
 struct MapScreen: View {
     @StateObject private var viewModel = PeopleScreenViewModel()
     @Environment(\.colorScheme) private var colorScheme
+    @State private var showSheetView = false
     @State private var region = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 55.751244, longitude: 37.618423),
         span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
@@ -182,7 +190,7 @@ struct MapScreen: View {
                     }
                     
                     Button {
-                        
+                        showSheetView = true
                     } label: {
                         Label(
                             "Button",
@@ -202,16 +210,19 @@ struct MapScreen: View {
             
         }
         .toolbar(.hidden, for: .tabBar)
+        .sheet(isPresented: $showSheetView) {
+            SheetView()
+        }
     }
 }
 
-// MARK: - MetsSheetView
-struct MetsSheetView: View {
+// MARK: - SheetView
+struct SheetView: View {
     
     var body: some View {
         ZStack {
             VStack(spacing: 24) {
-                Text("People you met today will be here")
+                Text("Some content will be here")
                     .font(.title3)
                     .fontWeight(.medium)
             }
@@ -240,9 +251,8 @@ struct NearSheetView: View {
 struct PeopleScreenContent: View {
     @StateObject private var viewModel = PeopleScreenViewModel()
     @Environment(\.colorScheme) private var colorScheme
-    @State private var showMetsSheetView = false
-    @State private var showNearSheetView = false
     @State private var showMapScreen = false
+    @State private var showSheetView = false
     
     var body: some View {
         ZStack {
@@ -308,7 +318,7 @@ struct PeopleScreenContent: View {
                     }
                     
                     Button {
-                        
+                        showSheetView = true
                     } label: {
                         Label(
                             "Button",
@@ -326,11 +336,12 @@ struct PeopleScreenContent: View {
                     .frame(width: 44, height: 44)
                 }
             }
-            
-            
         }
         .navigationDestination(isPresented: $showMapScreen) {
             MapScreen()
+        }
+        .sheet(isPresented: $showSheetView) {
+            SheetView()
         }
     }
 }
@@ -340,8 +351,7 @@ struct ChatsScreenContent: View {
     @StateObject private var viewModel = ChatsScreenViewModel()
     @Environment(\.colorScheme) private var colorScheme
     @State private var showLocalChatScreen = false
-    @State private var showNearSheetView = false
-    @State private var showMapScreen = false
+    @State private var showSheetView = false
     @State private var hasUnreadRequests: Bool = true
     
     var body: some View {
@@ -360,9 +370,6 @@ struct ChatsScreenContent: View {
                                 .foregroundColor(.gray)
                         }
                         .listRowSeparator(.hidden)
-                        
-                        //                        Text(viewModel.multiChat)
-                        //                            .font(.body)
                         
                         ForEach(viewModel.chatList) { chat in
                             ChatBoxView(
@@ -431,13 +438,14 @@ struct ChatsScreenContent: View {
                     }
                     
                     Button {
-                        
+                        showSheetView = true
                     } label: {
                         Label(
                             "Button",
                             systemImage: "slider.horizontal.3"
                         )
                     }
+                    
                     
                     
                 } label: {
@@ -453,6 +461,9 @@ struct ChatsScreenContent: View {
         }
         .navigationDestination(isPresented: $showLocalChatScreen) {
             LocalChatScreen()
+        }
+        .sheet(isPresented: $showSheetView) {
+            SheetView()
         }
     }
 }
@@ -471,10 +482,10 @@ struct SettingsScreenContent: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
-        .navigationTitle(
-            UIDevice.current.userInterfaceIdiom == .phone
-            ? viewModel.settingsLabel : ""
-        )
+//        .navigationTitle(
+//            UIDevice.current.userInterfaceIdiom == .phone
+//            ? viewModel.settingsLabel : ""
+//        )
         .toolbar {
             
             ToolbarItem(placement: .navigationBarLeading) {
@@ -508,6 +519,7 @@ struct SettingsScreenContent: View {
                     Text("Label")
                     
                     Button {
+                        
                     } label: {
                         Label(
                             "Info about App",
