@@ -351,8 +351,8 @@ struct ChatsScreenContent: View {
     @StateObject private var viewModel = ChatsScreenViewModel()
     @Environment(\.colorScheme) private var colorScheme
     @State private var showLocalChatScreen = false
-    @State private var showSheetView = false
     @State private var hasUnreadRequests: Bool = true
+    @StateObject private var menusModel = AppMenusModel()
     
     var body: some View {
         ZStack {
@@ -391,6 +391,12 @@ struct ChatsScreenContent: View {
             UIDevice.current.userInterfaceIdiom == .phone
             ? viewModel.chatsLabel : ""
         )
+        .navigationDestination(isPresented: $showLocalChatScreen) {
+            LocalChatScreen()
+        }
+        .sheet(isPresented: $menusModel.showInfoSheet) {
+            ChatsInfoSheetView()
+        }
         .toolbar {
             
             ToolbarItem(placement: .navigationBarLeading) {
@@ -411,7 +417,6 @@ struct ChatsScreenContent: View {
                         }
                     }
                     .frame(width: 44, height: 44)
-                    //                    .background(Color(.gray)).opacity(0.5)
                 }
             }
             
@@ -423,48 +428,10 @@ struct ChatsScreenContent: View {
             }
             
             ToolbarItem(placement: .navigationBarTrailing) {
-                
-                Menu {
-                    
-                    Text("Label")
-                    
-                    Button {
-                        
-                    } label: {
-                        Label(
-                            "Info about Chats",
-                            systemImage: "info.circle"
-                        )
-                    }
-                    
-                    Button {
-                        showSheetView = true
-                    } label: {
-                        Label(
-                            "Button",
-                            systemImage: "slider.horizontal.3"
-                        )
-                    }
-                    
-                    
-                    
-                } label: {
-                    ZStack {
-                        Image(systemName: "ellipsis")
-                            .font(.system(size: 20, weight: .regular))
-                            .foregroundColor(colorScheme == .dark ? .white : .black)
-                    }
-                    .frame(width: 44, height: 44)
-                }
-                
+                menusModel.appMenus.chatsMenu
             }
         }
-        .navigationDestination(isPresented: $showLocalChatScreen) {
-            LocalChatScreen()
-        }
-        .sheet(isPresented: $showSheetView) {
-            SheetView()
-        }
+        
     }
 }
 
@@ -472,25 +439,21 @@ struct ChatsScreenContent: View {
 struct SettingsScreenContent: View {
     @StateObject private var viewModel = SettingsScreenViewModel()
     @Environment(\.colorScheme) private var colorScheme
-    @State private var showSettingsInfoSheet = false
+    @StateObject private var menusModel = AppMenusModel()
     
     var body: some View {
-        let menu = AppMenus(showSettingsInfoSheet: $showSettingsInfoSheet, colorScheme: colorScheme)
 
         ZStack {
             VStack {
                 Text(viewModel.settingsData)
             }
         }
-        .sheet(isPresented: $showSettingsInfoSheet) {
-            SettingsInfoSheetView()
-        }
+        .sheet(isPresented: $menusModel.showInfoSheet) { SettingsInfoSheetView() }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                menu.settingsMenu // ← Вот тут красиво вызывается
+                menusModel.appMenus.settingsMenu
             }
-
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
                     // some action
@@ -502,7 +465,6 @@ struct SettingsScreenContent: View {
                         .frame(width: 44, height: 44)
                 }
             }
-
             ToolbarItem(placement: .principal) {
                 if UIDevice.current.userInterfaceIdiom == .phone {
                     Text(viewModel.settingsLabel)
