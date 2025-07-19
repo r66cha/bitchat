@@ -8,12 +8,15 @@
 import SwiftUI
 
 protocol MenuItemRepresentable {
-    var isLabel: Bool { get }
-    var title: Text { get }
-    var imageName: String? { get }
-    var action: (() -> Void)? { get }
+    var title: Text? { get }
+    var viewButton: AnyView? { get }
 }
+
 
 protocol MenuItemListRepresentable {
     var menuItemList: [MenuItemRepresentable] { get }
+}
+
+protocol MenuRepresentable {
+    var view: AnyView { get }
 }

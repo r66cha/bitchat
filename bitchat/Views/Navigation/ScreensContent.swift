@@ -472,72 +472,41 @@ struct ChatsScreenContent: View {
 struct SettingsScreenContent: View {
     @StateObject private var viewModel = SettingsScreenViewModel()
     @Environment(\.colorScheme) private var colorScheme
-    @State private var showQRCodeSheet = false
-    @State private var isChecked = false
+    @State private var showSettingsInfoSheet = false
     
     var body: some View {
+        let menu = AppMenus(showSettingsInfoSheet: $showSettingsInfoSheet, colorScheme: colorScheme)
+
         ZStack {
             VStack {
                 Text(viewModel.settingsData)
             }
         }
+        .sheet(isPresented: $showSettingsInfoSheet) {
+            SettingsInfoSheetView()
+        }
         .navigationBarTitleDisplayMode(.inline)
-//        .navigationTitle(
-//            UIDevice.current.userInterfaceIdiom == .phone
-//            ? viewModel.settingsLabel : ""
-//        )
         .toolbar {
-            
+            ToolbarItem(placement: .navigationBarTrailing) {
+                menu.settingsMenu // ← Вот тут красиво вызывается
+            }
+
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
-                    // Действие для камеры
+                    // some action
                 } label: {
-                    ZStack {
-                        Image(systemName: "camera.circle.fill")
-                            .foregroundColor(.gray)
-                            .font(.system(size: 36, weight: .regular))
-                            .opacity(0.5)
-                    }
-                    .frame(width: 44, height: 44)
+                    Image(systemName: "camera.circle.fill")
+                        .foregroundColor(.gray)
+                        .font(.system(size: 36, weight: .regular))
+                        .opacity(0.5)
+                        .frame(width: 44, height: 44)
                 }
             }
-            
+
             ToolbarItem(placement: .principal) {
                 if UIDevice.current.userInterfaceIdiom == .phone {
                     Text(viewModel.settingsLabel)
-                        .font(
-                            .system(size: 20, design: .default).weight(
-                                .bold
-                            )
-                        )
-                }
-            }
-            
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Menu {
-                    
-                    Text("Label")
-                    
-                    Button {
-                        
-                    } label: {
-                        Label(
-                            "Info about App",
-                            systemImage: "info.circle")
-                    }
-                    
-                    
-//                    Toggle(isOn: $isChecked) {
-//                            Label("Label", systemImage: isChecked ? "checkmark.circle.fill" : "circle")
-//                        }
-                    
-                } label: {
-                    ZStack {
-                        Image(systemName: "ellipsis")
-                            .font(.system(size: 20, weight: .regular))
-                            .foregroundColor(colorScheme == .dark ? .white : .black)
-                    }
-                    .frame(width: 44, height: 44)
+                        .font(.system(size: 20, design: .default).weight(.bold))
                 }
             }
         }
