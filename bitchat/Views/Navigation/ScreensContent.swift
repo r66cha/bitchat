@@ -353,7 +353,7 @@ struct ChatsScreenContent: View {
     @State private var showLocalChatScreen = false
     @State private var hasUnreadRequests: Bool = true
     @StateObject private var menusModel = AppMenusModel()
-    
+
     var body: some View {
         ZStack {
             VStack {
@@ -387,10 +387,7 @@ struct ChatsScreenContent: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
-        .navigationTitle(
-            UIDevice.current.userInterfaceIdiom == .phone
-            ? viewModel.chatsLabel : ""
-        )
+        .navigationTitle(UIDevice.current.userInterfaceIdiom == .phone ? viewModel.chatsLabel : "")
         .navigationDestination(isPresented: $showLocalChatScreen) {
             LocalChatScreen()
         }
@@ -398,7 +395,6 @@ struct ChatsScreenContent: View {
             ChatsInfoSheetView()
         }
         .toolbar {
-            
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
                     showLocalChatScreen = true
@@ -428,10 +424,9 @@ struct ChatsScreenContent: View {
             }
             
             ToolbarItem(placement: .navigationBarTrailing) {
-                menusModel.appMenus.chatsMenu
+                menusModel.appMenus(for: colorScheme).chatsMenu
             }
         }
-        
     }
 }
 
@@ -452,7 +447,7 @@ struct SettingsScreenContent: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                menusModel.appMenus.settingsMenu
+                menusModel.appMenus(for: colorScheme).settingsMenu
             }
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {

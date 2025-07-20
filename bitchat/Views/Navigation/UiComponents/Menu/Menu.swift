@@ -2,9 +2,8 @@ import SwiftUI
 
 class AppMenusModel: ObservableObject {
     @Published var showInfoSheet: Bool = false
-    @Published var colorScheme: ColorScheme = .light 
 
-    var appMenus: AppMenus {
+    func appMenus(for colorScheme: ColorScheme) -> AppMenus {
         AppMenus(
             showInfoSheet: Binding(
                 get: { self.showInfoSheet },
